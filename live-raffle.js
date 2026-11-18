@@ -14,7 +14,20 @@ function show(stage,title,detail,number=''){
  if(!overlay){overlay=node('dialog','','raffle-overlay');overlay.setAttribute('aria-labelledby','raffleTitle');const card=node('div','','raffle-card');card.append(node('div','SOLBITNARAE LUCKY DRAW','raffle-eyebrow'),node('h2',title),node('p',detail),node('strong',number,'raffle-number'));card.children[1].id='raffleTitle';card.children[3].setAttribute('aria-live','polite');overlay.append(card);overlay.addEventListener('cancel',e=>{e.preventDefault();if(overlayStage==='winner')dismiss();});document.body.append(overlay);overlay.showModal();}
  if(overlayStage!==stage){overlayStage=stage;overlay.querySelector('h2').textContent=title;overlay.querySelector('p').textContent=detail;overlay.querySelector('.raffle-number').textContent=number;overlay.classList.toggle('raffle-winner',stage==='winner');if(stage==='winner'){const button=node('button','확인했어요','q-button q-primary');button.onclick=dismiss;overlay.querySelector('.raffle-card').append(button);button.focus();}}
 }
-function tick(){
+
+let quizAwardDialog=null,quizAwardId='';
+function closeQuizAward(){if(quizAwardDialog){quizAwardDialog.close();quizAwardDialog.remove();quizAwardDialog=null;}quizAwardId='';}
+function renderQuizAward(){
+ if(!current||!session()||document.hidden||!current.prize){closeQuizAward();return false;}
+ const prize=current.prize;if(quizAwardId&&quizAwardId!==prize.id)closeQuizAward();if(quizAwardDialog)return true;if(overlay)return false;
+ quizAwardId=prize.id;quizAwardDialog=node('dialog','','raffle-overlay raffle-winner');quizAwardDialog.setAttribute('aria-labelledby','quizAwardTitle');
+ const card=node('div','','raffle-card'),title=node('h2','축하합니다! 🎉');title.id='quizAwardTitle';const button=node('button','확인했어요','q-button q-primary'),feedback=node('p','');
+ card.append(node('div','QUIZ SPECIAL PRIZE','raffle-eyebrow'),title,node('p',prize.nickname+' 님은 '+prize.question_number+'번 문제의 '+prize.position+'번째 정답자입니다.'),node('strong','당첨','raffle-number'),node('p','확인번호 '+current.reference+' · 이 화면을 진행자에게 보여 주세요.'),button,feedback);quizAwardDialog.append(card);
+ const acknowledge=async()=>{button.disabled=true;try{await api('ack_prize',{prizeId:prize.id});if(current?.prize?.id===prize.id)current.prize=null;closeQuizAward();}catch{feedback.textContent='연결을 확인하고 다시 눌러 주세요.';button.disabled=false;}};
+ button.onclick=acknowledge;quizAwardDialog.addEventListener('cancel',e=>{e.preventDefault();acknowledge();});document.body.append(quizAwardDialog);quizAwardDialog.showModal();button.focus();return true;
+}
+
+function tick(){if(!admin&&renderQuizAward())return;
  if(admin){if(!current)return;const remaining=new Date(current.state.reveal_at).getTime()-(Date.now()+offset);const button=$('startRaffle');if(button)button.disabled=starting||busy||!current.candidates?.length||remaining>-10000;const label=$('rafflePhase');if(label)label.textContent=remaining>3000?'추첨 중입니다…':remaining>0?'추첨 중 · '+Math.ceil(remaining/1000):current.state.draw_id?'추첨 완료':'추첨 대기';return;}
  if(!current||!session()||document.hidden){closeOverlay();return;}
  const {state,eligible,won}=current;if(!state.draw_id||!eligible||dismissed.includes(state.draw_id)){closeOverlay();return;}
