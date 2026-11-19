@@ -22,7 +22,7 @@ function renderQuizAward(){
  const prize=current.prize;if(quizAwardId&&quizAwardId!==prize.id)closeQuizAward();if(quizAwardDialog)return true;if(overlay)return false;
  quizAwardId=prize.id;quizAwardDialog=node('dialog','','raffle-overlay raffle-winner');quizAwardDialog.setAttribute('aria-labelledby','quizAwardTitle');
  const card=node('div','','raffle-card'),title=node('h2','축하합니다! 🎉');title.id='quizAwardTitle';const button=node('button','확인했어요','q-button q-primary'),feedback=node('p','');
- card.append(node('div','QUIZ SPECIAL PRIZE','raffle-eyebrow'),title,node('p',prize.nickname+' 님은 '+prize.question_number+'번 문제의 '+prize.position+'번째 정답자입니다.'),node('strong','당첨','raffle-number'),node('p','확인번호 '+current.reference+' · 이 화면을 진행자에게 보여 주세요.'),button,feedback);quizAwardDialog.append(card);
+ card.append(node('div','QUIZ SPECIAL PRIZE','raffle-eyebrow'),title,node('p',prize.nickname+' 님은 '+prize.question_number+'번 문제의 '+prize.position+'번째 '+(prize.scope==='all'?'응답자':'정답자')+'입니다.'),node('strong','당첨','raffle-number'),node('p','확인번호 '+current.reference+' · 이 화면을 진행자에게 보여 주세요.'),button,feedback);quizAwardDialog.append(card);
  const acknowledge=async()=>{button.disabled=true;try{await api('ack_prize',{prizeId:prize.id});if(current?.prize?.id===prize.id)current.prize=null;closeQuizAward();}catch{feedback.textContent='연결을 확인하고 다시 눌러 주세요.';button.disabled=false;}};
  button.onclick=acknowledge;quizAwardDialog.addEventListener('cancel',e=>{e.preventDefault();acknowledge();});document.body.append(quizAwardDialog);quizAwardDialog.showModal();button.focus();return true;
 }
