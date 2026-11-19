@@ -11,8 +11,8 @@ async function api(action,extra={}){const before=Date.now(),controller=new Abort
 function closeOverlay(){if(!overlay)return;overlay.close();overlay.remove();overlay=null;overlayStage='';}
 function dismiss(){if(current?.state.draw_id){dismissed.push(current.state.draw_id);dismissed=dismissed.slice(-100);try{localStorage.setItem('sf-raffle-dismissed',JSON.stringify(dismissed));}catch{}}closeOverlay();}
 function show(stage,title,detail,number=''){
- if(!overlay){overlay=node('dialog','','raffle-overlay');overlay.setAttribute('aria-labelledby','raffleTitle');const card=node('div','','raffle-card');card.append(node('div','SOLBITNARAE LUCKY DRAW','raffle-eyebrow'),node('h2',title),node('p',detail),node('strong',number,'raffle-number'));card.children[1].id='raffleTitle';card.children[3].setAttribute('aria-live','polite');overlay.append(card);overlay.addEventListener('cancel',e=>{e.preventDefault();if(overlayStage==='winner')dismiss();});document.body.append(overlay);overlay.showModal();}
- if(overlayStage!==stage){overlayStage=stage;overlay.querySelector('h2').textContent=title;overlay.querySelector('p').textContent=detail;overlay.querySelector('.raffle-number').textContent=number;overlay.classList.toggle('raffle-winner',stage==='winner');if(stage==='winner'){const button=node('button','확인했어요','q-button q-primary');button.onclick=dismiss;overlay.querySelector('.raffle-card').append(button);button.focus();}}
+ if(!overlay){overlay=node('dialog','','raffle-overlay');overlay.setAttribute('aria-labelledby','raffleTitle');const card=node('div','','raffle-card');card.append(node('div','SOLBITNARAE LUCKY DRAW','raffle-eyebrow'),node('h2',title),node('p',detail),node('strong',number,'raffle-number'));card.children[1].id='raffleTitle';card.children[3].setAttribute('aria-live','polite');overlay.append(card);overlay.addEventListener('cancel',e=>{e.preventDefault();if(overlayStage==='winner'||overlayStage==='not-winner')dismiss();});document.body.append(overlay);overlay.showModal();}
+ if(overlayStage!==stage){overlayStage=stage;overlay.querySelector('h2').textContent=title;overlay.querySelector('p').textContent=detail;overlay.querySelector('.raffle-number').textContent=number;overlay.classList.toggle('raffle-winner',stage==='winner');if(stage==='winner'||stage==='not-winner'){const button=node('button','확인했어요','q-button q-primary');button.onclick=dismiss;overlay.querySelector('.raffle-card').append(button);button.focus();}}
 }
 
 let quizAwardDialog=null,quizAwardId='';
@@ -35,7 +35,7 @@ function tick(){if(!admin&&renderQuizAward())return;
  if(remaining>3000)show('drawing','추첨 중입니다','행운의 주인공을 뽑고 있어요. 잠시만 기다려 주세요.','✦');
  else if(remaining>0){const count=String(Math.ceil(remaining/1000));show('count-'+count,'추첨 중입니다','곧 당첨자를 공개합니다.',count);}
  else if(won)show('winner','축하합니다! 🎉','회원님의 참여 코드가 당첨되었습니다. 확인번호 '+current.reference+' · 이 화면을 진행자에게 보여 주세요.','당첨');
- else if(current.serverTime>=new Date(state.reveal_at).getTime())closeOverlay();
+ else if(current.serverTime>=new Date(state.reveal_at).getTime())show('not-winner','다음 행운을 기대해 주세요!','이번에는 아쉽게도 당첨되지 않았어요. 다음 기회에 다시 도전해 주세요!','🍀');
  else show('checking','결과 확인 중입니다','당첨 여부를 확인하고 있어요.','✦');
 }
 function renderAdmin(){if(!current||!$('raffleCandidates'))return;const names=$('raffleCandidates');names.replaceChildren();for(const c of current.candidates)names.append(node('span',c.nickname+' · '+c.reference,'raffle-candidate'));$('raffleCount').textContent=current.candidates.length+'개 코드 추첨 가능';const list=$('raffleHistory');list.replaceChildren();for(const d of current.history){const row=node('p',new Date(d.created_at).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})+' · '+d.winner_name+' 님 당첨 · 확인번호 '+d.reference+' · 대상 '+d.count+'명');list.append(row);}if(!current.history.length)list.append(node('p','아직 완료된 추첨이 없습니다.'));tick();}
